@@ -1,48 +1,57 @@
-# Courriel personal email CLI tool
+# Courriel
 
-`courriel` is a personal CLI tool to manage Gmail and Microsoft365 email accounts.
-It is intended for my personal use, to schedule background tasks and with AI agents in mind.
+A personal CLI tool for managing Microsoft365 and Gmail accounts through local Maildir storage. Designed for personal use, server automation, and AI agent integration.
 
-## Core features
+## Features
 
-- sync between Gmail and Microsoft365 email accounts and Maildir locally
-  - by folder
-  - [N] most recent messages
-  - last [N] days/months
-  - messages after [date]
-- advanced search in remote folders
-  - sender email address/name/domain/regex
-  - recipient email address/name/domain/regex
-  - cc/bcc
-  - subject
-  - date
-  - email body
-- advanced search in local Maildir
+**Email Synchronization**
+- Sync emails to local Maildir format (`~/Mail`)
+- Filter by folder, date range, or message count
+- Incremental syncing with configurable limits
+- Full attachment support
 
-## Scope
+**Advanced Search**
+- Local search via `notmuch` (sender, recipient, subject, body, date)
+- Remote search via native APIs
+- Support for regex patterns and domain filtering
+- Search across cc/bcc fields
 
-First iteration only supports Microsoft365 and local operations.
+**Email Drafting**
+- Create and reply to emails via APIs
+- No sending capabilities (read and draft only)
+
+## Current Scope
+
+**First iteration:** Microsoft365 only with local operations.
+
+**Future:** Gmail support via Gmail API.
 
 ## Dependencies
 
-`uv` for dependencies management
+- **Package management:** `uv`
+- **Authentication:** `msal` (Microsoft identity platform)
+- **API clients:** `requests`
+- **CLI framework:** `typer`
+- **Local search:** `notmuch`
+- **APIs:** Microsoft Graph API, Gmail API (future)
 
-- msal and ... for authentication
-- requests
-- typer
-- notmuch for advanced search in Maildir directories
-- Microsoft Graph API
-- Gmail API
+## Microsoft 365 Setup
 
-## Setup
+1. Register an application in [Microsoft Entra ID](https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps)
+2. Configure API permissions:
+   - `User.Read`
+   - `Mail.ReadWrite`
+   - `offline_access`
+3. Grant admin consent for the permissions
+4. Create a client secret
+5. Save the **Application (client) ID**, **Directory (tenant) ID**, and **client secret** for configuration
 
-### Microsoft email
+## Architecture
 
-- App registration in Microsoft Entra ID
-- API permissions: `User.Read`, `Mail.ReadWrite`, `offline_access`,
-- Grant admin consent
-- Create client secret
+**Sync:** Emulates `mbsync` behavior using Microsoft Graph API with configurable message limits and incremental updates.
 
-### GMail
+**Local Search:** Wrapper around `notmuch` for fast, indexed searches in Maildir.
 
-Out of scope for this iteration.
+**Remote Search:** Direct API queries for server-side search capabilities.
+
+**Drafting:** API-based email composition and replies (no SMTP sending).
