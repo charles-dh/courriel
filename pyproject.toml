@@ -1,7 +1,7 @@
 [project]
 name = "courriel"
 version = "0.1.0"
-description = "Add your description here"
+description = "Personal email CLI tool for Microsoft365 and Gmail"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -9,3 +9,13 @@ dependencies = [
     "requests>=2.32.5",
     "typer>=0.20.0",
 ]
+
+[project.scripts]
+courriel = "courriel.cli.main:main"
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

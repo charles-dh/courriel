@@ -5,18 +5,21 @@ A personal CLI tool for managing Microsoft365 and Gmail accounts through local M
 ## Features
 
 **Email Synchronization**
+
 - Sync emails to local Maildir format (`~/Mail`)
 - Filter by folder, date range, or message count
 - Incremental syncing with configurable limits
 - Full attachment support
 
 **Advanced Search**
+
 - Local search via `notmuch` (sender, recipient, subject, body, date)
 - Remote search via native APIs
 - Support for regex patterns and domain filtering
 - Search across cc/bcc fields
 
 **Email Drafting**
+
 - Create and reply to emails via APIs
 - No sending capabilities (read and draft only)
 
@@ -55,3 +58,32 @@ A personal CLI tool for managing Microsoft365 and Gmail accounts through local M
 **Remote Search:** Direct API queries for server-side search capabilities.
 
 **Drafting:** API-based email composition and replies (no SMTP sending).
+
+## Directory Structure:
+
+courriel/  
+ ├── auth/ # Microsoft365 authentication  
+ ├── cli/ # CLI layer  
+ │ ├── commands/ # Command implementations  
+ │ │ ├── sync.py  
+ │ │ ├── search.py  
+ │ │ ├── read.py  
+ │ │ ├── draft.py  
+ │ │ ├── list.py  
+ │ │ └── config.py  
+ │ └── main.py # CLI entry point  
+ ├── config/ # Configuration management  
+ ├── draft/ # Email drafting  
+ ├── search/ # Email search (local/remote)  
+ ├── storage/ # Maildir operations  
+ └── sync/ # Email synchronization
+
+## Commands Available:
+
+- courriel sync - with folder, max-messages, since, days, all options
+- courriel search - with from, to, subject, body, folder, date range, format
+- courriel read - with format, attachments options
+- courriel draft - with to, cc, bcc, subject, body, reply-to, attach
+- courriel list - with type, remote/local, folder, max-messages
+- courriel config - with init, auth, show, set subcommands
+- courriel version - displays version

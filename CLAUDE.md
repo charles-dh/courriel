@@ -45,6 +45,8 @@ After important changes or refactoring, update @README.md to keep it in sync wit
 
 Follow these principles when writing or modifying code:
 
+- **Modern Python syntax** - Use modern type hints with `str | None` instead of `Optional[str]`. Requires Python 3.10+.
+
 - **Simplicity over abstraction** - Prefer direct, straightforward code. Only introduce abstraction (DI, interfaces, etc.) when there's a concrete need (testing, multiple implementations, runtime swapping).
 
 - **Readability is paramount** - Code will be read by junior developers. Write clear, explicit code over clever or terse code.
