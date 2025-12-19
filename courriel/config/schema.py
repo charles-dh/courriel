@@ -23,10 +23,10 @@ class AccountConfig(TypedDict, total=False):
     """Single email account configuration.
 
     Attributes:
-        provider: Email provider ("ms365" or future "gmail").
-        tenant_id: Microsoft 365 tenant/directory ID.
-        client_id: Azure app registration client/application ID.
-        client_secret: Optional client secret (prefer env var).
+        provider: Email provider ("ms365" or "gmail").
+        tenant_id: Microsoft 365 tenant/directory ID (MS365 only).
+        client_id: OAuth application client/application ID (both providers).
+        client_secret: Optional client secret (prefer env var for both providers).
         mail_dir: Local Maildir path for this account (e.g., "~/Mail/Work").
     """
 

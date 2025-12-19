@@ -45,9 +45,11 @@ def auth(
         str | None, typer.Option("--account", "-a", help="Account name to authenticate")
     ] = None,
 ):
-    """Authenticate with Microsoft365 using Device Code Flow.
+    """Authenticate with your email provider (Microsoft 365 or Gmail).
 
-    Opens a browser for you to sign in with your Microsoft account.
+    For MS365: Uses Device Code Flow - displays a code and URL to authenticate.
+    For Gmail: Uses OAuth loopback - opens browser automatically.
+
     Tokens are cached locally for future use.
     """
     config = load_config()
@@ -59,15 +61,21 @@ def auth(
         typer.echo("Run 'courriel config init' and add an account to config.toml")
         raise typer.Exit(1)
 
-    typer.echo("Starting authentication...")
+    provider = account_config.get("provider", "ms365")
+    typer.echo(f"Starting {provider.upper()} authentication...")
     typer.echo()
 
     result = authenticate(account_config)
 
     if "access_token" in result:
-        # Extract username from token claims if available
-        claims = result.get("id_token_claims", {})
-        username = claims.get("preferred_username", claims.get("email", "Unknown"))
+        # Extract username from result (provider-specific format)
+        if provider == "ms365":
+            claims = result.get("id_token_claims", {})
+            username = claims.get("preferred_username", claims.get("email", "Unknown"))
+        elif provider == "gmail":
+            username = result.get("email", "Unknown")
+        else:
+            username = "Unknown"
 
         typer.echo()
         typer.echo("Authentication successful!")

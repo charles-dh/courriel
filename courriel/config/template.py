@@ -24,6 +24,16 @@ days = 30
 # Get tenant_id and client_id from your Azure app registration.
 # For client_secret, use the COURRIEL_MS365_CLIENT_SECRET environment variable.
 #
+# Example Gmail account:
+#
+# [accounts.personal]
+# provider = "gmail"
+# client_id = "xxxxxx.apps.googleusercontent.com"
+# mail_dir = "~/Mail/Personal"
+#
+# Get client_id and client_secret from Google Cloud Console OAuth credentials.
+# For client_secret, use the COURRIEL_GMAIL_CLIENT_SECRET environment variable.
+#
 # After adding an account, authenticate with:
 #   courriel config auth --account work
 """
