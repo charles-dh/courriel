@@ -10,9 +10,16 @@ app = typer.Typer(help="Display email message(s)")
 def read(
     ctx: typer.Context,
     message_id: Annotated[str, typer.Argument(help="Message ID to read")],
-    format: Annotated[str, typer.Option("--format", help="Output format: text, json, raw, headers")] = "text",
-    no_attachments: Annotated[bool, typer.Option("--no-attachments", help="Don't show attachment info")] = False,
-    save_attachments: Annotated[str | None, typer.Option("--save-attachments", help="Save attachments to directory")] = None,
+    format: Annotated[
+        str, typer.Option("--format", help="Output format: text, json, raw, headers")
+    ] = "text",
+    no_attachments: Annotated[
+        bool, typer.Option("--no-attachments", help="Don't show attachment info")
+    ] = False,
+    save_attachments: Annotated[
+        str | None,
+        typer.Option("--save-attachments", help="Save attachments to directory"),
+    ] = None,
 ):
     """Display email message(s)."""
     typer.echo("Read command - not yet implemented")

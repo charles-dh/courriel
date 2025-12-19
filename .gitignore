@@ -9,3 +9,7 @@ wheels/
 # Virtual environments
 .venv
 .env
+
+# Credentials (never commit tokens or secrets)
+credentials/
+*_cache.json

@@ -1,7 +1,6 @@
 """Main CLI entry point for courriel."""
 
 import typer
-from typing_extensions import Annotated
 
 from courriel import __version__
 from courriel.cli import commands

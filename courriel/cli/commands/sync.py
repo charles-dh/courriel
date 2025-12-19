@@ -11,9 +11,15 @@ def sync(
     ctx: typer.Context,
     folder: Annotated[str | None, typer.Option(help="Sync specific folder")] = None,
     all: Annotated[bool, typer.Option("--all", help="Sync all folders")] = False,
-    max_messages: Annotated[int | None, typer.Option(help="Maximum messages to sync per folder")] = None,
-    since: Annotated[str | None, typer.Option(help="Sync messages after date (YYYY-MM-DD)")] = None,
-    days: Annotated[int | None, typer.Option(help="Sync messages from last N days")] = None,
+    max_messages: Annotated[
+        int | None, typer.Option(help="Maximum messages to sync per folder")
+    ] = None,
+    since: Annotated[
+        str | None, typer.Option(help="Sync messages after date (YYYY-MM-DD)")
+    ] = None,
+    days: Annotated[
+        int | None, typer.Option(help="Sync messages from last N days")
+    ] = None,
 ):
     """Synchronize emails between remote account and local Maildir."""
     typer.echo("Sync command - not yet implemented")
