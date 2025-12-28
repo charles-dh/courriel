@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from courriel.sync.gmail import GmailClient
+from courriel.sync.gmail import GmailClient, get_credentials
 
 
 @pytest.fixture
@@ -260,3 +260,88 @@ class TestListHistory:
         gmail_client.list_history(start_history_id="99", label_id="INBOX")
 
         mock_service.users().history().list.assert_called()
+
+
+class TestGetCredentials:
+    """Tests for get_credentials function.
+
+    Verifies token loading and automatic refresh behavior.
+    """
+
+    def test_returns_none_when_no_token(self):
+        """get_credentials returns None when no token file exists."""
+        with patch("courriel.sync.gmail._load_token", return_value=None):
+            result = get_credentials()
+
+            assert result is None
+
+    def test_returns_valid_credentials_directly(self):
+        """get_credentials returns valid credentials without refresh."""
+        mock_creds = MagicMock()
+        mock_creds.valid = True
+        mock_creds.expired = False
+
+        with patch("courriel.sync.gmail._load_token", return_value=mock_creds):
+            result = get_credentials()
+
+            assert result is mock_creds
+
+    def test_refreshes_expired_token_with_refresh_token(self):
+        """get_credentials refreshes expired tokens automatically."""
+        mock_creds = MagicMock()
+        mock_creds.expired = True
+        mock_creds.refresh_token = "valid_refresh_token"
+        # After refresh, the token becomes valid
+        mock_creds.valid = True
+
+        with (
+            patch("courriel.sync.gmail._load_token", return_value=mock_creds),
+            patch("courriel.sync.gmail._save_token") as mock_save,
+            patch("courriel.sync.gmail.Request") as mock_request,
+        ):
+            result = get_credentials()
+
+            # Should have called refresh with a Request object
+            mock_creds.refresh.assert_called_once()
+            mock_request.assert_called_once()
+            # Should have saved the refreshed token
+            mock_save.assert_called_once_with(mock_creds)
+            assert result is mock_creds
+
+    def test_returns_none_when_expired_without_refresh_token(self):
+        """get_credentials returns None for expired token without refresh token."""
+        mock_creds = MagicMock()
+        mock_creds.expired = True
+        mock_creds.refresh_token = None
+        mock_creds.valid = False
+
+        with patch("courriel.sync.gmail._load_token", return_value=mock_creds):
+            result = get_credentials()
+
+            assert result is None
+
+    def test_returns_none_when_refresh_fails(self):
+        """get_credentials returns None when token refresh fails."""
+        mock_creds = MagicMock()
+        mock_creds.expired = True
+        mock_creds.refresh_token = "valid_refresh_token"
+        mock_creds.refresh.side_effect = Exception("Refresh failed")
+
+        with (
+            patch("courriel.sync.gmail._load_token", return_value=mock_creds),
+            patch("courriel.sync.gmail.Request"),
+        ):
+            result = get_credentials()
+
+            assert result is None
+
+    def test_returns_none_when_not_valid_after_load(self):
+        """get_credentials returns None for invalid, non-expired token."""
+        mock_creds = MagicMock()
+        mock_creds.expired = False
+        mock_creds.valid = False  # Not expired but also not valid (edge case)
+
+        with patch("courriel.sync.gmail._load_token", return_value=mock_creds):
+            result = get_credentials()
+
+            assert result is None

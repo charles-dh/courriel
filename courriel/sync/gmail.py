@@ -6,23 +6,40 @@ Handles authentication, pagination, and data transformation.
 
 import base64
 
+from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError  # noqa: F401 - re-exported for callers
 
-from courriel.auth.gmail import _load_token
+from courriel.auth.gmail import _load_token, _save_token
 
 
 def get_credentials() -> Credentials | None:
     """Get Gmail credentials for API access.
 
     Returns the cached credentials object which can be used with
-    googleapiclient. Returns None if not authenticated.
+    googleapiclient. Automatically refreshes expired tokens if a
+    refresh token is available. Returns None if not authenticated
+    or if refresh fails.
 
     Returns:
         Credentials object or None if not authenticated.
     """
-    return _load_token()
+    creds = _load_token()
+    if not creds:
+        return None
+
+    # If token is expired but we have a refresh token, try to refresh
+    if creds.expired and creds.refresh_token:
+        try:
+            creds.refresh(Request())
+            _save_token(creds)  # Persist refreshed token
+        except Exception:
+            # Refresh failed - token is no longer valid
+            return None
+
+    # Return credentials only if valid
+    return creds if creds.valid else None
 
 
 class GmailClient:
