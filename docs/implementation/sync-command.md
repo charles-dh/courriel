@@ -391,14 +391,14 @@ Courriel is a CLI tool for syncing Gmail to local Maildir storage. The `sync` co
 
 ## Progress Tracking
 
-| Milestone           | Status      | Notes                  |
-| ------------------- | ----------- | ---------------------- |
-| 1. Gmail API Client | Not started | 6 steps + tests        |
-| 2. Maildir Storage  | Not started | 7 steps + tests        |
-| 3. Full Sync        | Not started | 6 steps + tests        |
-| 4. Incremental Sync | Not started | 5 steps + tests        |
-| 5. CLI Integration  | Not started | 7 steps + tests        |
-| 6. Documentation    | Not started | 4 steps, no code tests |
+| Milestone           | Status    | Notes                           |
+| ------------------- | --------- | ------------------------------- |
+| 1. Gmail API Client | Complete  | 15 tests passing                |
+| 2. Maildir Storage  | Complete  | 36 tests passing                |
+| 3. Full Sync        | Complete  | 19 tests passing                |
+| 4. Incremental Sync | Complete  | 12 tests passing                |
+| 5. CLI Integration  | Complete  | 13 tests passing                |
+| 6. Documentation    | Complete  | README updated, help text added |
 
 ---
 
