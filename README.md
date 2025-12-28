@@ -25,7 +25,9 @@ A personal CLI tool for managing Microsoft365 and Gmail accounts through local M
 
 ## Current Scope
 
-Supports both Microsoft 365 and Gmail via their respective APIs with local operations.
+**Gmail-first development.** Microsoft 365 support is planned but deprioritized (requires admin consent for API permissions).
+
+Supports Gmail via the Gmail API with local Maildir operations. MS365 support via Microsoft Graph API will be added later.
 
 ## Dependencies
 
@@ -36,18 +38,7 @@ Supports both Microsoft 365 and Gmail via their respective APIs with local opera
 - **Local search:** `notmuch`
 - **APIs:** Microsoft Graph API, Gmail API
 
-## Microsoft 365 Setup
-
-1. Register an application in [Microsoft Entra ID](https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps)
-2. Configure API permissions:
-   - `User.Read`
-   - `Mail.ReadWrite`
-   - `offline_access`
-3. Grant admin consent for the permissions
-4. Create a client secret
-5. Save the **Application (client) ID**, **Directory (tenant) ID**, and **client secret** for configuration
-
-## Gmail Setup
+## Gmail Setup (Primary)
 
 1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
 2. Enable the Gmail API for your project
@@ -68,6 +59,19 @@ Supports both Microsoft 365 and Gmail via their respective APIs with local opera
 - `https://www.googleapis.com/auth/gmail.readonly` - Read emails for sync and search
 - `https://www.googleapis.com/auth/gmail.modify` - Modify labels, mark read/unread
 - `https://www.googleapis.com/auth/gmail.compose` - Create drafts
+
+## Microsoft 365 Setup (Future)
+
+> **Note:** MS365 support is deprioritized. The setup below requires admin consent for API permissions.
+
+1. Register an application in [Microsoft Entra ID](https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps)
+2. Configure API permissions:
+   - `User.Read`
+   - `Mail.ReadWrite`
+   - `offline_access`
+3. Grant admin consent for the permissions
+4. Create a client secret
+5. Save the **Application (client) ID**, **Directory (tenant) ID**, and **client secret** for configuration
 
 ## Architecture
 
