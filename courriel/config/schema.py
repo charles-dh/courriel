@@ -13,10 +13,14 @@ class DefaultsConfig(TypedDict, total=False):
     Attributes:
         max_messages: Maximum number of messages to sync per folder.
         days: Number of days of history to sync.
+        search_limit: Maximum number of search results (default: 50).
+        search_output: Default search output format: json, summary, files.
     """
 
     max_messages: int
     days: int
+    search_limit: int
+    search_output: str
 
 
 class AccountConfig(TypedDict, total=False):

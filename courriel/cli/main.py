@@ -13,11 +13,13 @@ app = typer.Typer(
 
 # Register command groups
 app.add_typer(commands.sync.app, name="sync")
-app.add_typer(commands.search.app, name="search")
 app.add_typer(commands.read.app, name="read")
 app.add_typer(commands.draft.app, name="draft")
 app.add_typer(commands.list.app, name="list")
 app.add_typer(commands.config.app, name="config")
+
+# Register search as a direct command (has a required argument)
+app.command(name="search")(commands.search.search)
 
 
 @app.command()

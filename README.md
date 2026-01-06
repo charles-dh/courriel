@@ -121,6 +121,13 @@ courriel sync --folder INBOX
 
 # Sync all default labels
 courriel sync --all
+
+# Initialize notmuch search index
+cd ~/Mail  # or wherever your mail_dir is configured
+notmuch new
+
+# Search your emails
+courriel search "from:alice@example.com"
 ```
 
 ## Sync Command
@@ -200,6 +207,121 @@ Emails are stored in Maildir format at the path configured in `mail_dir`:
 
 Compatible with `notmuch`, `mutt`, and other Maildir tools.
 
+## Search Command
+
+The `search` command provides local email search via notmuch.
+
+### Prerequisites
+
+Install and initialize notmuch:
+
+```bash
+# Install notmuch (Ubuntu/Debian)
+sudo apt install notmuch
+
+# Initialize notmuch database (run from your mail root directory)
+cd ~/Mail
+notmuch new
+```
+
+### Usage
+
+```bash
+courriel search <query> [OPTIONS]
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `--all` | Search all accounts (default behavior) |
+| `--account TEXT` | Search specific account only |
+| `--limit INT` | Maximum results to return (default: 50) |
+| `--output TEXT` | Output format: json, summary, files (default: json) |
+| `--remote` | Search remote via API (v2, not implemented) |
+
+### Examples
+
+```bash
+# Search by sender
+courriel search "from:alice@example.com"
+
+# Search by subject
+courriel search "subject:meeting"
+
+# Search with date range
+courriel search "date:2024.."
+
+# Search unread messages
+courriel search "tag:unread"
+
+# Limit results and use human-readable output
+courriel search "from:TLDR" --limit 10 --output summary
+
+# Get file paths for piping to other tools
+courriel search "tag:unread" --output files
+
+# Search specific account
+courriel search "from:boss" --account work
+```
+
+### Query Syntax
+
+Courriel uses notmuch query syntax:
+
+| Query | Description |
+|-------|-------------|
+| `from:alice@example.com` | Sender address |
+| `to:bob@example.com` | Recipient address |
+| `subject:meeting` | Subject contains word |
+| `date:2024..` | Messages from 2024 onwards |
+| `date:..2024-06-01` | Messages before June 2024 |
+| `tag:unread` | Unread messages |
+| `tag:flagged` | Starred/flagged messages |
+| `attachment:pdf` | Has PDF attachment |
+| `from:alice AND subject:urgent` | Boolean AND |
+| `from:alice OR from:bob` | Boolean OR |
+| `NOT tag:spam` | Negation |
+
+Full syntax: https://notmuchmail.org/doc/latest/man7/notmuch-search-terms.html
+
+### Output Formats
+
+**JSON** (default) - Structured output with metadata:
+```json
+{
+  "query": "from:alice@example.com",
+  "total": 2,
+  "results": [
+    {
+      "id": "abc123@example.com",
+      "account": "personal",
+      "file": "/home/user/Mail/Personal/INBOX/cur/...",
+      "date": "2024-01-15T10:00:00Z",
+      "from": "Alice Smith <alice@example.com>",
+      "to": ["bob@example.com"],
+      "subject": "Re: Project update",
+      "snippet": "Thanks for the update! I've reviewed...",
+      "tags": ["inbox", "replied"],
+      "attachments": []
+    }
+  ]
+}
+```
+
+**Summary** - Human-readable format:
+```
+personal: 2 results
+  2024-01-15 Alice Smith <alice@exam... Re: Project update
+  2024-01-14 Alice Smith <alice@exam... Project update
+```
+
+**Files** - One file path per line:
+```
+/home/user/Mail/Personal/INBOX/cur/1705312800.abc123.host:2,S
+/home/user/Mail/Personal/INBOX/cur/1705226400.def456.host:2,S
+```
+
 ## Configuration
 
 Configuration is stored in `~/.config/courriel/config.toml`:
@@ -209,6 +331,8 @@ Configuration is stored in `~/.config/courriel/config.toml`:
 max_messages = 100          # Default message limit per sync
 days = 30                   # Default lookback period
 sync_labels = ["INBOX", "SENT", "DRAFT"]  # Labels for --all
+search_limit = 50           # Default search result limit
+search_output = "json"      # Default search output format
 
 [accounts.personal]
 provider = "gmail"
@@ -278,14 +402,34 @@ courriel config init
 - Verify messages exist: `ls ~/Mail/Personal/INBOX/cur/`
 - Run `notmuch new` to index for search
 
+### Search Errors
+
+**"notmuch not found"**
+```bash
+# Install notmuch
+sudo apt install notmuch
+```
+
+**"Run 'notmuch new' to index your mail"**
+```bash
+# Initialize notmuch database
+cd ~/Mail
+notmuch new
+```
+
+**"No results found"**
+- Ensure notmuch has indexed your mail: `notmuch new`
+- Verify query syntax: https://notmuchmail.org/doc/latest/man7/notmuch-search-terms.html
+- Check that mail exists in the configured `mail_dir`
+
 ## Other Commands
 
 | Command | Description | Status |
 |---------|-------------|--------|
-| `courriel sync` | Sync emails to Maildir | Implemented |
-| `courriel config` | Manage configuration | Implemented |
-| `courriel search` | Search emails | Planned |
+| `courriel sync` | Sync emails to Maildir | ✅ Implemented |
+| `courriel search` | Search emails locally | ✅ Implemented |
+| `courriel config` | Manage configuration | ✅ Implemented |
 | `courriel read` | Display messages | Planned |
 | `courriel draft` | Create email drafts | Planned |
 | `courriel list` | List folders/messages | Planned |
-| `courriel version` | Show version | Implemented |
+| `courriel version` | Show version | ✅ Implemented |
