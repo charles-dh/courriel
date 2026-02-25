@@ -4,6 +4,8 @@ import typer
 
 from courriel import __version__
 from courriel.cli import commands
+from courriel.config import get_account_names, load_config
+from courriel.config.paths import migrate_credential_files
 
 app = typer.Typer(
     name="courriel",
@@ -20,6 +22,19 @@ app.add_typer(commands.config.app, name="config")
 
 # Register search as a direct command (has a required argument)
 app.command(name="search")(commands.search.search)
+
+
+@app.callback()
+def _startup() -> None:
+    """Run once before any command.
+
+    Handles one-time migrations (e.g. renaming legacy credential files
+    to per-account names) so existing users aren't forced to re-authenticate.
+    """
+    config = load_config()
+    names = get_account_names(config)
+    if names:
+        migrate_credential_files(names)
 
 
 @app.command()

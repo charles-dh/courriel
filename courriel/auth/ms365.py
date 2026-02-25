@@ -5,7 +5,7 @@ which is ideal for CLI applications. The user gets a code and URL,
 authenticates in their browser, and the CLI receives tokens.
 
 Token caching is handled by MSAL's SerializableTokenCache, which we
-persist to ~/.config/courriel/credentials/ms365_cache.json
+persist to ~/.config/courriel/credentials/ms365_cache_<account>.json
 """
 
 import os
@@ -13,7 +13,7 @@ import sys
 
 import msal
 
-from courriel.config.paths import MS365_CACHE_FILE, ensure_credentials_dir
+from courriel.config.paths import ms365_cache_file, ensure_credentials_dir
 
 # Microsoft Graph scopes required for email operations.
 # - User.Read: Get user profile info (for displaying logged-in user)
@@ -26,30 +26,39 @@ SCOPES = ["User.Read", "Mail.ReadWrite"]
 CLIENT_SECRET_ENV = "COURRIEL_MS365_CLIENT_SECRET"
 
 
-def _load_token_cache() -> msal.SerializableTokenCache:
-    """Load the token cache from disk.
+def _load_token_cache(account_name: str) -> msal.SerializableTokenCache:
+    """Load the token cache from disk for a specific account.
 
     Returns an empty cache if the cache file doesn't exist.
     MSAL handles token refresh automatically when using the cache.
+
+    Args:
+        account_name: Account key from config (e.g. "personal").
     """
     cache = msal.SerializableTokenCache()
+    cache_path = ms365_cache_file(account_name)
 
-    if MS365_CACHE_FILE.exists():
-        cache.deserialize(MS365_CACHE_FILE.read_text())
+    if cache_path.exists():
+        cache.deserialize(cache_path.read_text())
 
     return cache
 
 
-def _save_token_cache(cache: msal.SerializableTokenCache) -> None:
-    """Persist the token cache to disk.
+def _save_token_cache(cache: msal.SerializableTokenCache, account_name: str) -> None:
+    """Persist the token cache to disk for a specific account.
 
     Sets file permissions to 600 (owner read/write only) to protect tokens.
+
+    Args:
+        cache: MSAL token cache to persist.
+        account_name: Account key from config (e.g. "personal").
     """
     ensure_credentials_dir()
 
-    MS365_CACHE_FILE.write_text(cache.serialize())
+    cache_path = ms365_cache_file(account_name)
+    cache_path.write_text(cache.serialize())
     # Restrictive permissions: only owner can read/write
-    MS365_CACHE_FILE.chmod(0o600)
+    cache_path.chmod(0o600)
 
 
 def get_client_secret(account_config: dict) -> str | None:
@@ -98,6 +107,7 @@ def _build_msal_app(
 def authenticate_device_flow(
     client_id: str,
     tenant_id: str,
+    account_name: str,
 ) -> dict:
     """Perform Device Code Flow authentication.
 
@@ -109,13 +119,14 @@ def authenticate_device_flow(
     Args:
         client_id: Azure app registration client/application ID.
         tenant_id: Azure tenant/directory ID.
+        account_name: Account key from config (e.g. "personal").
 
     Returns:
         Authentication result dict containing:
         - On success: 'access_token', 'id_token_claims', etc.
         - On failure: 'error' and 'error_description'
     """
-    cache = _load_token_cache()
+    cache = _load_token_cache(account_name)
     app = _build_msal_app(client_id, tenant_id, cache)
 
     # Check for existing cached token first
@@ -126,7 +137,7 @@ def authenticate_device_flow(
         if result and "access_token" in result:
             # Save cache in case token was refreshed
             if cache.has_state_changed:
-                _save_token_cache(cache)
+                _save_token_cache(cache, account_name)
             return result
 
     # No cached token or refresh failed, start device flow
@@ -152,12 +163,12 @@ def authenticate_device_flow(
 
     # Save the updated cache with new tokens
     if cache.has_state_changed:
-        _save_token_cache(cache)
+        _save_token_cache(cache, account_name)
 
     return result
 
 
-def get_access_token(client_id: str, tenant_id: str) -> str | None:
+def get_access_token(client_id: str, tenant_id: str, account_name: str) -> str | None:
     """Get a valid access token using cached credentials.
 
     Silently refreshes the token if expired. Does not prompt for login.
@@ -166,11 +177,12 @@ def get_access_token(client_id: str, tenant_id: str) -> str | None:
     Args:
         client_id: Azure app registration client/application ID.
         tenant_id: Azure tenant/directory ID.
+        account_name: Account key from config (e.g. "personal").
 
     Returns:
         Access token string, or None if not authenticated.
     """
-    cache = _load_token_cache()
+    cache = _load_token_cache(account_name)
     app = _build_msal_app(client_id, tenant_id, cache)
 
     accounts = app.get_accounts()
@@ -182,13 +194,13 @@ def get_access_token(client_id: str, tenant_id: str) -> str | None:
     if result and "access_token" in result:
         # Save cache in case token was refreshed
         if cache.has_state_changed:
-            _save_token_cache(cache)
+            _save_token_cache(cache, account_name)
         return result["access_token"]
 
     return None
 
 
-def is_authenticated(client_id: str, tenant_id: str) -> bool:
+def is_authenticated(client_id: str, tenant_id: str, account_name: str) -> bool:
     """Check if we have valid cached credentials.
 
     Does not attempt to refresh - just checks if tokens exist.
@@ -196,8 +208,9 @@ def is_authenticated(client_id: str, tenant_id: str) -> bool:
     Args:
         client_id: Azure app registration client/application ID.
         tenant_id: Azure tenant/directory ID.
+        account_name: Account key from config (e.g. "personal").
 
     Returns:
         True if valid cached credentials exist.
     """
-    return get_access_token(client_id, tenant_id) is not None
+    return get_access_token(client_id, tenant_id, account_name) is not None

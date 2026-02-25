@@ -61,11 +61,15 @@ def auth(
         typer.echo("Run 'courriel config init' and add an account to config.toml")
         raise typer.Exit(1)
 
+    # Resolve account name: use the explicit --account flag, or fall back
+    # to the first configured account key.
+    account_name = account or next(iter(config.get("accounts", {}).keys()), "default")
+
     provider = account_config.get("provider", "ms365")
     typer.echo(f"Starting {provider.upper()} authentication...")
     typer.echo()
 
-    result = authenticate(account_config)
+    result = authenticate(account_config, account_name)
 
     if "access_token" in result:
         # Extract username from result (provider-specific format)

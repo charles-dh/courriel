@@ -7,10 +7,10 @@ Usage:
     from courriel.auth import authenticate, get_access_token
 
     # Perform OAuth flow (interactive)
-    result = authenticate(account_config)
+    result = authenticate(account_config, "personal")
 
     # Get cached access token (non-interactive)
-    token = get_access_token(account_config)
+    token = get_access_token(account_config, "personal")
 """
 
 from courriel.config.schema import AccountConfig
@@ -34,7 +34,7 @@ __all__ = [
 ]
 
 
-def authenticate(account: AccountConfig) -> dict:
+def authenticate(account: AccountConfig, account_name: str) -> dict:
     """Authenticate with the configured email provider.
 
     For Microsoft 365, uses Device Code Flow - displays a code and URL
@@ -45,6 +45,7 @@ def authenticate(account: AccountConfig) -> dict:
 
     Args:
         account: Account configuration from config.toml.
+        account_name: Account key from config (e.g. "personal", "work").
 
     Returns:
         Authentication result dict:
@@ -63,7 +64,7 @@ def authenticate(account: AccountConfig) -> dict:
                 "error_description": "MS365 account must have 'client_id' and 'tenant_id' configured.",
             }
 
-        return _ms365_auth(client_id, tenant_id)
+        return _ms365_auth(client_id, tenant_id, account_name)
 
     elif provider == "gmail":
         client_id = account.get("client_id")
@@ -85,7 +86,7 @@ def authenticate(account: AccountConfig) -> dict:
                 "error_description": "Gmail client_secret not found. Set COURRIEL_GMAIL_CLIENT_SECRET environment variable or add 'client_secret' to config.",
             }
 
-        return _gmail_auth(client_id, client_secret)
+        return _gmail_auth(client_id, client_secret, account_name)
 
     else:
         return {
@@ -94,7 +95,7 @@ def authenticate(account: AccountConfig) -> dict:
         }
 
 
-def get_access_token(account: AccountConfig) -> str | None:
+def get_access_token(account: AccountConfig, account_name: str) -> str | None:
     """Get a valid access token for the account.
 
     Uses cached credentials and refreshes if needed.
@@ -102,6 +103,7 @@ def get_access_token(account: AccountConfig) -> str | None:
 
     Args:
         account: Account configuration from config.toml.
+        account_name: Account key from config (e.g. "personal", "work").
 
     Returns:
         Access token string, or None if not authenticated.
@@ -115,7 +117,7 @@ def get_access_token(account: AccountConfig) -> str | None:
         if not client_id or not tenant_id:
             return None
 
-        return _ms365_token(client_id, tenant_id)
+        return _ms365_token(client_id, tenant_id, account_name)
 
     elif provider == "gmail":
         client_id = account.get("client_id")
@@ -130,17 +132,18 @@ def get_access_token(account: AccountConfig) -> str | None:
         if not client_secret:
             return None
 
-        return _gmail_token(client_id, client_secret)
+        return _gmail_token(client_id, client_secret, account_name)
 
     else:
         return None
 
 
-def is_authenticated(account: AccountConfig) -> bool:
+def is_authenticated(account: AccountConfig, account_name: str) -> bool:
     """Check if the account has valid cached credentials.
 
     Args:
         account: Account configuration from config.toml.
+        account_name: Account key from config (e.g. "personal", "work").
 
     Returns:
         True if valid credentials exist, False otherwise.
@@ -154,7 +157,7 @@ def is_authenticated(account: AccountConfig) -> bool:
         if not client_id or not tenant_id:
             return False
 
-        return _ms365_is_auth(client_id, tenant_id)
+        return _ms365_is_auth(client_id, tenant_id, account_name)
 
     elif provider == "gmail":
         client_id = account.get("client_id")
@@ -169,7 +172,7 @@ def is_authenticated(account: AccountConfig) -> bool:
         if not client_secret:
             return False
 
-        return _gmail_is_auth(client_id, client_secret)
+        return _gmail_is_auth(client_id, client_secret, account_name)
 
     else:
         return False

@@ -266,12 +266,13 @@ class TestGetCredentials:
     """Tests for get_credentials function.
 
     Verifies token loading and automatic refresh behavior.
+    All tests pass account_name="test" since credentials are now per-account.
     """
 
     def test_returns_none_when_no_token(self):
         """get_credentials returns None when no token file exists."""
         with patch("courriel.sync.gmail._load_token", return_value=None):
-            result = get_credentials()
+            result = get_credentials("test")
 
             assert result is None
 
@@ -282,7 +283,7 @@ class TestGetCredentials:
         mock_creds.expired = False
 
         with patch("courriel.sync.gmail._load_token", return_value=mock_creds):
-            result = get_credentials()
+            result = get_credentials("test")
 
             assert result is mock_creds
 
@@ -299,13 +300,13 @@ class TestGetCredentials:
             patch("courriel.sync.gmail._save_token") as mock_save,
             patch("courriel.sync.gmail.Request") as mock_request,
         ):
-            result = get_credentials()
+            result = get_credentials("test")
 
             # Should have called refresh with a Request object
             mock_creds.refresh.assert_called_once()
             mock_request.assert_called_once()
-            # Should have saved the refreshed token
-            mock_save.assert_called_once_with(mock_creds)
+            # Should have saved the refreshed token with account name
+            mock_save.assert_called_once_with(mock_creds, "test")
             assert result is mock_creds
 
     def test_returns_none_when_expired_without_refresh_token(self):
@@ -316,7 +317,7 @@ class TestGetCredentials:
         mock_creds.valid = False
 
         with patch("courriel.sync.gmail._load_token", return_value=mock_creds):
-            result = get_credentials()
+            result = get_credentials("test")
 
             assert result is None
 
@@ -331,7 +332,7 @@ class TestGetCredentials:
             patch("courriel.sync.gmail._load_token", return_value=mock_creds),
             patch("courriel.sync.gmail.Request"),
         ):
-            result = get_credentials()
+            result = get_credentials("test")
 
             assert result is None
 
@@ -342,6 +343,6 @@ class TestGetCredentials:
         mock_creds.valid = False  # Not expired but also not valid (edge case)
 
         with patch("courriel.sync.gmail._load_token", return_value=mock_creds):
-            result = get_credentials()
+            result = get_credentials("test")
 
             assert result is None
