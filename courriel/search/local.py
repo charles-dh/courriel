@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 from .models import SearchResult
@@ -95,20 +96,14 @@ def search_local(
     if not message_ids:
         return []
 
-    # Step 2: Get full message data for each ID
-    results = []
-    for msg_id in message_ids:
-        result = _get_message_data(msg_id, account_name)
-        if result:
-            results.append(result)
-
-    return results
+    # Step 2: Fetch all message data in a single batched call
+    return _get_messages_batch(message_ids, account_name)
 
 
 def _get_message_ids(query: str, limit: int) -> list[str]:
-    """Get message IDs matching a query.
+    """Get message IDs matching a query, sorted newest-first.
 
-    Uses: notmuch search --format=json --output=messages --limit=N <query>
+    Uses: notmuch search --format=json --output=messages --sort=newest-first --limit=N <query>
     """
     result = subprocess.run(
         [
@@ -116,6 +111,7 @@ def _get_message_ids(query: str, limit: int) -> list[str]:
             "search",
             "--format=json",
             "--output=messages",
+            "--sort=newest-first",
             f"--limit={limit}",
             query,
         ],
@@ -133,33 +129,35 @@ def _get_message_ids(query: str, limit: int) -> list[str]:
         raise NotmuchError(f"Failed to parse notmuch output: {e}")
 
 
-def _get_message_data(message_id: str, account_name: str) -> SearchResult | None:
-    """Get full message data for a single message ID.
+def _get_messages_batch(
+    message_ids: list[str], account_name: str
+) -> list[SearchResult]:
+    """Fetch all messages in a single notmuch show call via OR query.
 
-    Uses: notmuch show --format=json --body=true id:<message_id>
+    Collapses N per-message subprocess calls into one, keeping the
+    order that notmuch returns (which matches the sorted ID list from
+    _get_message_ids).
     """
+    # Build an OR query so notmuch fetches all messages at once
+    id_query = " OR ".join(f"id:{mid}" for mid in message_ids)
     result = subprocess.run(
-        [
-            "notmuch",
-            "show",
-            "--format=json",
-            "--body=true",
-            f"id:{message_id}",
-        ],
+        ["notmuch", "show", "--format=json", "--body=true", id_query],
         capture_output=True,
         text=True,
     )
-
     if result.returncode != 0:
-        # Skip messages we can't read
-        return None
-
+        raise NotmuchError(result.stderr.strip() or "notmuch show failed")
     try:
         data = json.loads(result.stdout)
-        return _parse_message_json(data, account_name)
-    except (json.JSONDecodeError, KeyError, IndexError):
-        # Skip malformed messages
-        return None
+    except json.JSONDecodeError as e:
+        raise NotmuchError(f"Failed to parse notmuch output: {e}")
+
+    results = []
+    for thread in data:  # data is a list of threads
+        msg = _parse_message_json([thread], account_name)
+        if msg:
+            results.append(msg)
+    return results
 
 
 def _parse_message_json(data: list, account_name: str) -> SearchResult | None:
@@ -227,8 +225,6 @@ def _parse_email_date(date_str: str) -> datetime:
         "Mon, 15 Jan 2024 10:00:00 +0000"
         "15 Jan 2024 10:00:00 -0500"
     """
-    from email.utils import parsedate_to_datetime
-
     return parsedate_to_datetime(date_str)
 
 

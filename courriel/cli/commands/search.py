@@ -157,8 +157,7 @@ def search(
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
 
-    # Sort by date (newest first) and apply limit across all accounts
-    all_results.sort(key=lambda r: r.date, reverse=True)
+    # Apply limit across all accounts (results are pre-sorted newest-first by notmuch)
     all_results = all_results[:limit]
 
     # Format and output results

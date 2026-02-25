@@ -96,10 +96,10 @@ class TestGetPrimaryFolder:
         labels = ["UNREAD", "STARRED", "MyLabel", "AnotherLabel"]
         assert storage.get_primary_folder(labels) == "Labels/MyLabel"
 
-    def test_inbox_fallback(self, storage: MaildirStorage):
-        """Falls back to INBOX if only virtual labels."""
+    def test_archive_fallback(self, storage: MaildirStorage):
+        """Falls back to Archive if only virtual labels (message has no standard folder label)."""
         labels = ["UNREAD", "STARRED"]
-        assert storage.get_primary_folder(labels) == "INBOX"
+        assert storage.get_primary_folder(labels) == "Archive"
 
 
 class TestLabelsToFlags:

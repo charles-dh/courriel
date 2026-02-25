@@ -153,8 +153,8 @@ class MaildirStorage:
             if label not in virtual_labels and label not in LABEL_FOLDER_MAP:
                 return self.label_to_folder(label)
 
-        # Ultimate fallback to INBOX
-        return "INBOX"
+        # Ultimate fallback: archived emails (no standard folder label) belong in Archive
+        return "Archive"
 
     def labels_to_flags(self, label_ids: list[str]) -> str:
         """Convert Gmail labels to Maildir flags.
