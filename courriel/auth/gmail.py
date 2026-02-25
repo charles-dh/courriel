@@ -6,7 +6,7 @@ consent page, they authenticate, and the authorization code is captured via
 a local HTTP server redirect.
 
 Token caching is handled by google.oauth2.credentials, which we persist
-to ~/.config/courriel/credentials/gmail_token.json
+to ~/.config/courriel/credentials/gmail_token_<account>.json
 """
 
 import json
@@ -16,7 +16,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-from courriel.config.paths import GMAIL_TOKEN_FILE, ensure_credentials_dir
+from courriel.config.paths import gmail_token_file, ensure_credentials_dir
 
 # Gmail API scopes required for email operations.
 # - gmail.readonly: Read emails (for sync and search)
@@ -37,29 +37,39 @@ CLIENT_SECRET_ENV = "COURRIEL_GMAIL_CLIENT_SECRET"
 REDIRECT_URI = "http://localhost:8080"
 
 
-def _load_token() -> Credentials | None:
-    """Load credentials from disk.
+def _load_token(account_name: str) -> Credentials | None:
+    """Load credentials from disk for a specific account.
 
     Returns None if the token file doesn't exist or is invalid.
     Google's Credentials class handles token refresh automatically.
+
+    Args:
+        account_name: Account key from config (e.g. "personal").
     """
-    if not GMAIL_TOKEN_FILE.exists():
+    token_path = gmail_token_file(account_name)
+    if not token_path.exists():
         return None
 
     try:
-        creds = Credentials.from_authorized_user_file(str(GMAIL_TOKEN_FILE), SCOPES)
+        creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
         return creds
     except Exception:
         # Invalid token file - will re-authenticate
         return None
 
 
-def _save_token(creds: Credentials) -> None:
-    """Persist credentials to disk.
+def _save_token(creds: Credentials, account_name: str) -> None:
+    """Persist credentials to disk for a specific account.
 
     Sets file permissions to 600 (owner read/write only) to protect tokens.
+
+    Args:
+        creds: Google OAuth credentials to persist.
+        account_name: Account key from config (e.g. "personal").
     """
     ensure_credentials_dir()
+
+    token_path = gmail_token_file(account_name)
 
     # Convert credentials to JSON format
     token_data = {
@@ -71,9 +81,9 @@ def _save_token(creds: Credentials) -> None:
         "scopes": creds.scopes,
     }
 
-    GMAIL_TOKEN_FILE.write_text(json.dumps(token_data, indent=2))
+    token_path.write_text(json.dumps(token_data, indent=2))
     # Restrictive permissions: only owner can read/write
-    GMAIL_TOKEN_FILE.chmod(0o600)
+    token_path.chmod(0o600)
 
 
 def get_client_secret(account_config: dict) -> str | None:
@@ -119,6 +129,7 @@ def _build_client_config(client_id: str, client_secret: str) -> dict:
 def authenticate_loopback_flow(
     client_id: str,
     client_secret: str,
+    account_name: str,
 ) -> dict:
     """Perform OAuth 2.0 loopback flow authentication.
 
@@ -131,6 +142,7 @@ def authenticate_loopback_flow(
     Args:
         client_id: Google Cloud OAuth client ID.
         client_secret: Google Cloud OAuth client secret.
+        account_name: Account key from config (e.g. "personal").
 
     Returns:
         Authentication result dict containing:
@@ -138,7 +150,7 @@ def authenticate_loopback_flow(
         - On failure: 'error' and 'error_description'
     """
     # Check for existing cached token first
-    creds = _load_token()
+    creds = _load_token(account_name)
 
     if creds and creds.valid:
         # Token is still valid, return it
@@ -152,7 +164,7 @@ def authenticate_loopback_flow(
         # Token expired but we can refresh it
         try:
             creds.refresh(Request())
-            _save_token(creds)
+            _save_token(creds, account_name)
             return {
                 "access_token": creds.token,
                 "refresh_token": creds.refresh_token,
@@ -180,7 +192,7 @@ def authenticate_loopback_flow(
         )
 
         # Save the credentials for future use
-        _save_token(creds)
+        _save_token(creds, account_name)
 
         return {
             "access_token": creds.token,
@@ -195,7 +207,9 @@ def authenticate_loopback_flow(
         }
 
 
-def get_access_token(client_id: str, client_secret: str) -> str | None:
+def get_access_token(
+    client_id: str, client_secret: str, account_name: str
+) -> str | None:
     """Get a valid access token using cached credentials.
 
     Silently refreshes the token if expired. Does not prompt for login.
@@ -204,11 +218,12 @@ def get_access_token(client_id: str, client_secret: str) -> str | None:
     Args:
         client_id: Google Cloud OAuth client ID.
         client_secret: Google Cloud OAuth client secret (needed for refresh).
+        account_name: Account key from config (e.g. "personal").
 
     Returns:
         Access token string, or None if not authenticated.
     """
-    creds = _load_token()
+    creds = _load_token(account_name)
 
     if not creds:
         return None
@@ -217,7 +232,7 @@ def get_access_token(client_id: str, client_secret: str) -> str | None:
     if creds.expired and creds.refresh_token:
         try:
             creds.refresh(Request())
-            _save_token(creds)
+            _save_token(creds, account_name)
         except Exception:
             # Refresh failed
             return None
@@ -228,7 +243,7 @@ def get_access_token(client_id: str, client_secret: str) -> str | None:
     return None
 
 
-def is_authenticated(client_id: str, client_secret: str) -> bool:
+def is_authenticated(client_id: str, client_secret: str, account_name: str) -> bool:
     """Check if we have valid cached credentials.
 
     Attempts to refresh if expired, so this may make a network request.
@@ -236,8 +251,9 @@ def is_authenticated(client_id: str, client_secret: str) -> bool:
     Args:
         client_id: Google Cloud OAuth client ID.
         client_secret: Google Cloud OAuth client secret.
+        account_name: Account key from config (e.g. "personal").
 
     Returns:
         True if valid cached credentials exist.
     """
-    return get_access_token(client_id, client_secret) is not None
+    return get_access_token(client_id, client_secret, account_name) is not None

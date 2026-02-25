@@ -14,7 +14,7 @@ from googleapiclient.errors import HttpError  # noqa: F401 - re-exported for cal
 from courriel.auth.gmail import _load_token, _save_token
 
 
-def get_credentials() -> Credentials | None:
+def get_credentials(account_name: str) -> Credentials | None:
     """Get Gmail credentials for API access.
 
     Returns the cached credentials object which can be used with
@@ -22,10 +22,13 @@ def get_credentials() -> Credentials | None:
     refresh token is available. Returns None if not authenticated
     or if refresh fails.
 
+    Args:
+        account_name: Account key from config (e.g. "personal").
+
     Returns:
         Credentials object or None if not authenticated.
     """
-    creds = _load_token()
+    creds = _load_token(account_name)
     if not creds:
         return None
 
@@ -33,7 +36,7 @@ def get_credentials() -> Credentials | None:
     if creds.expired and creds.refresh_token:
         try:
             creds.refresh(Request())
-            _save_token(creds)  # Persist refreshed token
+            _save_token(creds, account_name)  # Persist refreshed token
         except Exception:
             # Refresh failed - token is no longer valid
             return None

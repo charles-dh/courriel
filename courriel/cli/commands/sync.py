@@ -172,8 +172,11 @@ def sync(
         typer.echo("Currently only Gmail is supported.")
         raise typer.Exit(1)
 
+    # Get account name for state file and credential lookup
+    account_name = account or next(iter(config.get("accounts", {}).keys()), "default")
+
     # Check authentication
-    credentials = get_credentials()
+    credentials = get_credentials(account_name)
     if not credentials or not credentials.valid:
         typer.echo("Error: Not authenticated.", err=True)
         typer.echo()
@@ -197,9 +200,6 @@ def sync(
     # Get mail directory from config
     mail_dir = account_config.get("mail_dir", "~/Mail")
     mail_path = Path(mail_dir).expanduser()
-
-    # Get account name for state file
-    account_name = account or next(iter(config.get("accounts", {}).keys()), "default")
 
     # Create engine components
     gmail_client = GmailClient(credentials)
