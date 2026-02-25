@@ -24,6 +24,7 @@ __all__ = [
     "save_config",
     "init_config",
     "get_account",
+    "get_account_names",
     "set_config_value",
     "CONFIG_FILE",
 ]
@@ -185,7 +186,7 @@ def _convert_value(key: str, value: str) -> str | int:
         ValueError: If value cannot be converted to expected type.
     """
     # Fields that should be integers
-    int_fields = {"max_messages", "days"}
+    int_fields = {"max_messages", "days", "search_limit"}
 
     if key in int_fields:
         return int(value)
