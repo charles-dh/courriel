@@ -35,6 +35,12 @@ LABEL_FOLDER_MAP = {
     "SPAM": "Spam",
 }
 
+# Special pseudo-label: ALL means "no label filter" in the Gmail API,
+# which returns all messages (equivalent to Gmail's "All Mail" view).
+# Messages synced via ALL are filed into their real folder based on labels,
+# so this constant is only used by the sync engine to recognize the intent.
+ALL_MAIL_LABEL = "ALL"
+
 # Gmail labels that map to Maildir flags instead of folders
 # STARRED and IMPORTANT are treated as flags, not folders
 LABEL_FLAG_MAP = {

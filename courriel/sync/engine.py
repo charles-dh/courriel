@@ -8,7 +8,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from courriel.storage.maildir import MaildirStorage
+from courriel.storage.maildir import ALL_MAIL_LABEL, MaildirStorage
 from courriel.sync.gmail import GmailClient, HttpError
 from courriel.sync.state import SyncState
 
@@ -125,9 +125,13 @@ class SyncEngine:
         highest_history_id: str | None = None
 
         for label in labels:
+            # ALL is a pseudo-label meaning "all mail" — pass None to the API
+            # so it returns messages regardless of label (Gmail's "All Mail").
+            api_label = None if label == ALL_MAIL_LABEL else label
+
             # Get message IDs for this label
             message_ids = self._gmail.list_messages(
-                label_id=label,
+                label_id=api_label,
                 query=query,
                 max_results=max_messages,
             )
@@ -211,10 +215,13 @@ class SyncEngine:
         current_history_id = start_history_id
 
         for label in labels:
+            # ALL is a pseudo-label — pass None so history isn't filtered by label
+            api_label = None if label == ALL_MAIL_LABEL else label
+
             try:
                 history_result = self._gmail.list_history(
                     start_history_id=start_history_id,
-                    label_id=label,
+                    label_id=api_label,
                 )
             except HttpError as e:
                 # HTTP 404 means historyId is expired - fall back to full sync

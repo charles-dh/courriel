@@ -18,8 +18,9 @@ from courriel.storage.maildir import MaildirStorage
 
 app = typer.Typer(help="Synchronize emails between remote account and local Maildir")
 
-# Default labels to sync when --all is specified
-DEFAULT_LABELS = ["INBOX", "SENT", "DRAFT"]
+# Default labels to sync when --all is specified.
+# ALL is a pseudo-label that syncs all mail (including archived emails).
+DEFAULT_LABELS = ["INBOX", "SENT", "DRAFT", "ALL"]
 
 
 def _parse_date(date_str: str) -> date:
