@@ -29,13 +29,88 @@ A personal CLI tool for managing Microsoft365 and Gmail accounts through local M
 
 Supports Gmail via the Gmail API with local Maildir operations. MS365 support via Microsoft Graph API will be added later.
 
+## Installation
+
+### 1. Install system dependencies
+
+```bash
+# notmuch — required for local search
+sudo apt install notmuch       # Debian/Ubuntu
+brew install notmuch           # macOS
+
+# uv — Python package manager
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### 2. Install courriel
+
+```bash
+# From source
+git clone <repo-url>
+cd courriel
+uv sync
+
+# The courriel command is now available via:
+uv run courriel
+
+# Or install globally with pipx for a system-wide command:
+pipx install .
+```
+
+### 3. Set up Gmail credentials
+
+See [Gmail Setup](#gmail-setup-primary) below for how to create OAuth credentials in Google Cloud Console.
+
+Once you have a **Client ID** and **Client Secret**, set the secret as an environment variable (add to `~/.bashrc` or `~/.zshrc` to persist):
+
+```bash
+export COURRIEL_GMAIL_CLIENT_SECRET="your-client-secret"
+```
+
+### 4. Configure and authenticate
+
+```bash
+# Create config file at ~/.config/courriel/config.toml
+courriel config init
+```
+
+Edit `~/.config/courriel/config.toml` to add your account:
+
+```toml
+[defaults]
+max_messages = 100
+days = 30
+
+[accounts.personal]
+provider = "gmail"
+client_id = "xxxxxx.apps.googleusercontent.com"
+mail_dir = "~/Mail/Personal"
+```
+
+Then authenticate:
+
+```bash
+courriel config auth --account personal
+# Opens a browser window — approve Gmail access
+```
+
+### 5. Initialize notmuch
+
+Run this once after your first sync to build the search index:
+
+```bash
+notmuch new
+```
+
+After that, `courriel sync` runs `notmuch new` automatically whenever new messages are downloaded.
+
 ## Dependencies
 
 - **Package management:** `uv`
 - **Authentication:** `msal` (Microsoft), `google-auth-oauthlib` (Gmail)
 - **API clients:** `requests`, `google-api-python-client`
 - **CLI framework:** `typer`
-- **Local search:** `notmuch`
+- **Local search:** `notmuch` (system package, not Python)
 - **APIs:** Microsoft Graph API, Gmail API
 
 ## Gmail Setup (Primary)

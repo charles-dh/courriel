@@ -4,6 +4,7 @@ Synchronizes emails from Gmail to local Maildir storage.
 Supports both full and incremental sync modes.
 """
 
+import subprocess
 from datetime import date
 from pathlib import Path
 
@@ -238,6 +239,13 @@ def sync(
 
     # Print result
     _print_result(result)
+
+    # Update notmuch index so new messages are searchable
+    if result.downloaded > 0:
+        typer.echo("Updating notmuch index...")
+        proc = subprocess.run(["notmuch", "new"], capture_output=True, text=True)
+        if proc.returncode != 0:
+            typer.echo(f"Warning: notmuch indexing failed: {proc.stderr.strip()}", err=True)
 
     # Exit with error code if there were errors
     if result.errors > 0:

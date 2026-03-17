@@ -7,6 +7,7 @@ no notmuch dependency needed for reading.
 
 from datetime import datetime, timezone
 from email import policy
+from email.header import decode_header, make_header
 from email.parser import BytesParser
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -91,17 +92,24 @@ def read_message(path: Path) -> EmailMessage:
     return EmailMessage(
         file=str(path),
         date=date,
-        from_addr=msg.get("From", ""),
-        to_addrs=_parse_address_list(msg.get("To", "")),
-        cc_addrs=_parse_address_list(msg.get("Cc", "")),
-        bcc_addrs=_parse_address_list(msg.get("Bcc", "")),
-        subject=msg.get("Subject", ""),
+        from_addr=_decode_header_value(msg.get("From", "")),
+        to_addrs=_parse_address_list(_decode_header_value(msg.get("To", ""))),
+        cc_addrs=_parse_address_list(_decode_header_value(msg.get("Cc", ""))),
+        bcc_addrs=_parse_address_list(_decode_header_value(msg.get("Bcc", ""))),
+        subject=_decode_header_value(msg.get("Subject", "")),
         message_id=msg.get("Message-ID", ""),
         in_reply_to=msg.get("In-Reply-To"),
         body_plain=body_plain,
         body_html=body_html,
         attachments=attachments,
     )
+
+
+def _decode_header_value(value: str) -> str:
+    """Decode a MIME-encoded header value (e.g. =?utf-8?b?...?=) to a plain string."""
+    if not value:
+        return value
+    return str(make_header(decode_header(value)))
 
 
 def _parse_date(date_str: str) -> datetime:
