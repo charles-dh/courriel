@@ -237,3 +237,14 @@ class GmailClient:
             "history": history_records,
             "historyId": current_history_id,
         }
+
+    def create_draft(self, mime_message) -> str:
+        """Create a Gmail draft from a MIME message object.
+
+        The Gmail API requires the raw RFC 2822 bytes encoded as base64url.
+        Returns the draft ID string (e.g. "r123456789").
+        """
+        raw_b64 = base64.urlsafe_b64encode(mime_message.as_bytes()).decode("utf-8")
+        body = {"message": {"raw": raw_b64}}
+        result = self._service.users().drafts().create(userId="me", body=body).execute()
+        return result["id"]
