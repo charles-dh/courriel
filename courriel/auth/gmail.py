@@ -32,10 +32,6 @@ SCOPES = [
 # Using env var is preferred over storing in config.toml for security.
 CLIENT_SECRET_ENV = "COURRIEL_GMAIL_CLIENT_SECRET"
 
-# Loopback redirect URI for installed applications
-# Google recommends localhost:8080 for CLI apps
-REDIRECT_URI = "http://localhost:8080"
-
 
 def _load_token(account_name: str) -> Credentials | None:
     """Load credentials from disk for a specific account.
@@ -121,7 +117,7 @@ def _build_client_config(client_id: str, client_secret: str) -> dict:
             "client_secret": client_secret,
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [REDIRECT_URI],
+            "redirect_uris": ["http://localhost"],
         }
     }
 
@@ -180,16 +176,21 @@ def authenticate_loopback_flow(
         flow = InstalledAppFlow.from_client_config(
             client_config,
             scopes=SCOPES,
-            redirect_uri=REDIRECT_URI,
         )
 
-        # Run local server to capture OAuth callback
-        # This will open the user's browser automatically
-        creds = flow.run_local_server(
-            port=8080,
-            # Customize success message
-            success_message="Authentication successful! You can close this window.",
-        )
+        # Manual console flow for headless environments (no browser available).
+        # Prints the auth URL for the user to open on another device, then
+        # prompts for the authorization code to paste back.
+        # redirect_uri must be set to the OOB value for this flow.
+        flow.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
+        auth_url, _ = flow.authorization_url(prompt="consent")
+
+        print("\nOpen this URL in your browser to authenticate:")
+        print(f"\n  {auth_url}\n")
+        code = input("Paste the authorization code here: ").strip()
+
+        flow.fetch_token(code=code)
+        creds = flow.credentials
 
         # Save the credentials for future use
         _save_token(creds, account_name)
