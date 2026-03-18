@@ -45,16 +45,11 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### 2. Install courriel
 
 ```bash
-# From source
-git clone <repo-url>
-cd courriel
-uv sync
+# Install globally as a tool (recommended)
+uv tool install /path/to/courriel
 
-# The courriel command is now available via:
-uv run courriel
-
-# Or install globally with pipx for a system-wide command:
-pipx install .
+# The courriel command is now available system-wide:
+courriel --help
 ```
 
 ### 3. Set up Gmail credentials
@@ -84,23 +79,47 @@ days = 30
 [accounts.personal]
 provider = "gmail"
 client_id = "xxxxxx.apps.googleusercontent.com"
-mail_dir = "~/Mail/Personal"
+mail_dir = "~/Maildir/personal"
 ```
+
+> **Tip:** Each account gets its own `mail_dir`. For multiple accounts, use distinct paths
+> (e.g. `~/Maildir/work`, `~/Maildir/personal`).
 
 Then authenticate:
 
 ```bash
 courriel config auth --account personal
-# Opens a browser window — approve Gmail access
 ```
 
-### 5. Initialize notmuch
+This prints an authorization URL. Open it in any browser (on any device), approve Gmail
+access, and paste the authorization code back into the terminal.
 
-Run this once after your first sync to build the search index:
+> **Headless servers (e.g. Raspberry Pi):** The console flow works fine — no browser is
+> needed on the server itself.
+
+### 5. Sync your mail
 
 ```bash
-notmuch new
+courriel sync --folder INBOX
 ```
+
+### 6. Initialize notmuch
+
+Run this once to set up the search index. When prompted for the mail directory, enter the
+**absolute path** — do not use `~`:
+
+```bash
+notmuch setup        # enter /home/<you>/Maildir when asked for the mail root
+notmuch new          # index all synced messages
+```
+
+> **Common mistake:** If you enter `~/Maildir` instead of `/home/you/Maildir` during
+> `notmuch setup`, notmuch will create a database at the wrong path and return no results.
+> Fix it with:
+> ```bash
+> notmuch config set database.path /home/you/Maildir
+> notmuch new
+> ```
 
 After that, `courriel sync` runs `notmuch new` automatically whenever new messages are downloaded.
 
@@ -188,21 +207,21 @@ courriel config init
 # Edit config to add your Gmail account
 # ~/.config/courriel/config.toml
 
-# Authenticate with Gmail
+# Authenticate with Gmail (prints a URL — open it in any browser, paste the code back)
 courriel config auth
 
 # Sync your inbox
 courriel sync --folder INBOX
 
-# Sync all default labels
-courriel sync --all
-
-# Initialize notmuch search index
-cd ~/Mail  # or wherever your mail_dir is configured
+# Initialize notmuch (use absolute path, not ~)
+notmuch setup        # set mail root to /home/<you>/Maildir
 notmuch new
 
 # Search your emails
 courriel search "from:alice@example.com"
+
+# List all emails
+courriel search "*" --output summary
 ```
 
 ## Sync Command
@@ -294,8 +313,8 @@ Install and initialize notmuch:
 # Install notmuch (Ubuntu/Debian)
 sudo apt install notmuch
 
-# Initialize notmuch database (run from your mail root directory)
-cd ~/Mail
+# Initialize notmuch — use the absolute path to your Maildir when prompted
+notmuch setup        # e.g. enter /home/you/Maildir, not ~/Maildir
 notmuch new
 ```
 
@@ -487,8 +506,7 @@ sudo apt install notmuch
 
 **"Run 'notmuch new' to index your mail"**
 ```bash
-# Initialize notmuch database
-cd ~/Mail
+notmuch setup        # use absolute path, e.g. /home/you/Maildir
 notmuch new
 ```
 
