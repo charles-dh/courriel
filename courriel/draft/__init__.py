@@ -3,6 +3,7 @@
 Builds MIME messages and creates Gmail drafts via the API.
 """
 
+import html as html_module
 import mimetypes
 from email import encoders
 from email.mime.base import MIMEBase
@@ -16,6 +17,17 @@ from courriel.sync.gmail import GmailClient
 __all__ = ["build_draft_message", "create_draft"]
 
 
+def _body_to_html(text: str) -> str:
+    """Convert plain text body to minimal HTML for email clients that don't render plain text."""
+    escaped = html_module.escape(text)
+    # Convert double newlines to paragraphs, single newlines to <br>
+    paragraphs = escaped.split("\n\n")
+    html_paragraphs = "".join(
+        f"<p>{p.replace(chr(10), '<br>')}</p>" for p in paragraphs
+    )
+    return f"<html><body>{html_paragraphs}</body></html>"
+
+
 def build_draft_message(
     to: list[str],
     subject: str,
@@ -24,7 +36,7 @@ def build_draft_message(
     bcc: list[str] | None = None,
     reply_to_message: EmailMessage | None = None,
     attach_paths: list[Path] | None = None,
-) -> MIMEText | MIMEMultipart:
+) -> MIMEMultipart:
     """Build a MIME message from the given inputs.
 
     Pure function — no API calls. Returns a MIME object ready for
@@ -41,12 +53,19 @@ def build_draft_message(
         attach_paths: Optional list of file paths to attach.
 
     Returns:
-        MIMEText for simple messages, MIMEMultipart when attachments are present.
+        MIMEMultipart with both plain text and HTML parts so email clients
+        render formatting correctly regardless of their plain text handling.
     """
+    # Always build a multipart/alternative body so clients like Spark
+    # pick the HTML part and render line breaks correctly.
+    alternative = MIMEMultipart("alternative")
+    alternative.attach(MIMEText(body, "plain"))
+    alternative.attach(MIMEText(_body_to_html(body), "html"))
+
     if attach_paths:
-        # Multipart message: text body + attachments
+        # Wrap alternative body + attachments in multipart/mixed
         msg = MIMEMultipart("mixed")
-        msg.attach(MIMEText(body, "plain"))
+        msg.attach(alternative)
 
         for path in attach_paths:
             # Guess MIME type from file extension; fall back to octet-stream
@@ -63,7 +82,7 @@ def build_draft_message(
             )
             msg.attach(part)
     else:
-        msg = MIMEText(body, "plain")
+        msg = alternative
 
     # Note: address parsing here uses a simple comma split which breaks on
     # display names containing commas (e.g. "Smith, John <j@example.com>").
